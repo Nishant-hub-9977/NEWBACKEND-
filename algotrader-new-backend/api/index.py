@@ -13,13 +13,10 @@ UPSTOX_API_KEY = os.getenv('UPSTOX_API_KEY', '3620db9f-0c99-4df1-8278-51a44f19f1
 UPSTOX_API_SECRET = os.getenv('UPSTOX_API_SECRET', '14v44ngg4s')
 
 def generate_market_data():
-    """Generate realistic market data"""
     base_sensex = 65000
     base_nifty = 19500
-    
     sensex_change = random.uniform(-800, 800)
     nifty_change = random.uniform(-200, 200)
-    
     return {
         "sensex": {
             "value": round(base_sensex + sensex_change, 2),
@@ -35,7 +32,6 @@ def generate_market_data():
     }
 
 def generate_portfolio_data():
-    """Generate portfolio data"""
     return {
         "total_value": 275000.75,
         "day_pnl": random.uniform(-5000, 5000),
@@ -52,7 +48,7 @@ def generate_portfolio_data():
                 "pnl_percent": random.uniform(-10, 10)
             },
             {
-                "symbol": "NIFTY 19500 PE", 
+                "symbol": "NIFTY 19500 PE",
                 "quantity": 50,
                 "avg_price": 118.25,
                 "ltp": round(118.25 + random.uniform(-15, 15), 2),
@@ -101,55 +97,30 @@ def health_check():
 def market_quotes():
     try:
         data = generate_market_data()
-        return jsonify({
-            "success": True,
-            "data": data,
-            "message": "Market data retrieved successfully"
-        })
+        return jsonify({"success": True, "data": data, "message": "Market data retrieved successfully"})
     except Exception as e:
-        return jsonify({
-            "success": False,
-            "error": str(e),
-            "data": generate_market_data()
-        }), 200
+        return jsonify({"success": False, "error": str(e), "data": generate_market_data()}), 200
 
 @app.route('/api/portfolio', methods=['GET'])
 def portfolio():
     try:
         data = generate_portfolio_data()
-        return jsonify({
-            "success": True,
-            "data": data,
-            "message": "Portfolio data retrieved successfully"
-        })
+        return jsonify({"success": True, "data": data, "message": "Portfolio data retrieved successfully"})
     except Exception as e:
-        return jsonify({
-            "success": False,
-            "error": str(e),
-            "data": generate_portfolio_data()
-        }), 200
+        return jsonify({"success": False, "error": str(e), "data": generate_portfolio_data()}), 200
 
 @app.route('/api/trading/place-order', methods=['POST', 'OPTIONS'])
 def place_order():
     if request.method == 'OPTIONS':
         return jsonify({}), 200
-        
     try:
         order_data = request.get_json() or {}
-        
-        # Validate required fields
         required_fields = ['symbol', 'side', 'quantity', 'price']
-        missing_fields = [field for field in required_fields if field not in order_data]
-        
+        missing_fields = [f for f in required_fields if f not in order_data]
         if missing_fields:
-            return jsonify({
-                "success": False,
-                "error": f"Missing required fields: {', '.join(missing_fields)}"
-            }), 400
-        
-        # Generate order response
+            return jsonify({"success": False, "error": f"Missing required fields: {', '.join(missing_fields)}"}), 400
+
         order_id = f"ORD{random.randint(10000, 99999)}"
-        
         response_data = {
             "order_id": order_id,
             "symbol": order_data["symbol"],
@@ -160,107 +131,71 @@ def place_order():
             "executed_price": float(order_data["price"]) + random.uniform(-0.5, 0.5),
             "timestamp": datetime.now().isoformat()
         }
-        
-        return jsonify({
-            "success": True,
-            "data": response_data,
-            "message": "Order placed successfully"
-        })
-        
+        return jsonify({"success": True, "data": response_data, "message": "Order placed successfully"})
     except Exception as e:
-        return jsonify({
-            "success": False,
-            "error": str(e)
-        }), 500
+        return jsonify({"success": False, "error": str(e)}), 500
 
 @app.route('/api/strategy/execute', methods=['POST', 'OPTIONS'])
 def execute_strategy():
     if request.method == 'OPTIONS':
         return jsonify({}), 200
-        
     try:
         strategy_data = request.get_json() or {}
-        strategy_type = strategy_data.get('type', 'straddle')
-        quantity = strategy_data.get('quantity', 25)
-        
-        # Generate strategy execution response
+        stype = strategy_data.get('type', 'straddle')
+        qty = strategy_data.get('quantity', 25)
         strategy_id = f"STR{random.randint(10000, 99999)}"
-        
         orders = []
-        if strategy_type == 'straddle':
+        if stype == 'straddle':
             orders = [
-                {
-                    "order_id": f"ORD{random.randint(10000, 99999)}",
-                    "symbol": "NIFTY 19500 CE",
-                    "side": "SELL",
-                    "quantity": quantity,
-                    "price": 125.50,
-                    "status": "EXECUTED"
-                },
-                {
-                    "order_id": f"ORD{random.randint(10000, 99999)}",
-                    "symbol": "NIFTY 19500 PE", 
-                    "side": "SELL",
-                    "quantity": quantity,
-                    "price": 118.25,
-                    "status": "EXECUTED"
-                }
+                { "order_id": f"ORD{random.randint(10000, 99999)}",
+                  "symbol": "NIFTY 19500 CE", "side": "SELL", "quantity": qty, "price": 125.50, "status": "EXECUTED" },
+                { "order_id": f"ORD{random.randint(10000, 99999)}",
+                  "symbol": "NIFTY 19500 PE", "side": "SELL", "quantity": qty, "price": 118.25, "status": "EXECUTED" }
             ]
-        
+        total_premium = sum(o["price"] * o["quantity"] for o in orders)
         response_data = {
             "strategy_id": strategy_id,
-            "type": strategy_type,
+            "type": stype,
             "status": "EXECUTED",
             "orders": orders,
-            "total_premium": sum(order["price"] * order["quantity"] for order in orders),
+            "total_premium": total_premium,
             "timestamp": datetime.now().isoformat()
         }
-        
-        return jsonify({
-            "success": True,
-            "data": response_data,
-            "message": f"{strategy_type.title()} strategy executed successfully"
-        })
-        
+        return jsonify({"success": True, "data": response_data,
+                        "message": f"{stype.title()} strategy executed successfully"})
     except Exception as e:
-        return jsonify({
-            "success": False,
-            "error": str(e)
-        }), 500
+        return jsonify({"success": False, "error": str(e)}), 500
 
-# Handle all OPTIONS requests
+# CORS preflight
 @app.before_request
 def handle_preflight():
     if request.method == "OPTIONS":
-        response = jsonify({})
-        response.headers.add("Access-Control-Allow-Origin", "*")
-        response.headers.add("Access-Control-Allow-Headers", "Content-Type,Authorization,X-Requested-With")
-        response.headers.add("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS")
-        response.headers.add("Access-Control-Max-Age", "86400")
-        return response
+        resp = jsonify({})
+        resp.headers.update({
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Headers": "Content-Type,Authorization,X-Requested-With",
+            "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS",
+            "Access-Control-Max-Age": "86400"
+        })
+        return resp
 
 # Error handlers
 @app.errorhandler(404)
 def not_found(error):
-    return jsonify({
-        "success": False,
-        "error": "Endpoint not found",
-        "available_endpoints": ["/api", "/api/health", "/api/market/quotes", "/api/portfolio", "/api/trading/place-order", "/api/strategy/execute"]
-    }), 404
+    return jsonify({"success": False, "error": "Endpoint not found", "available_endpoints": [
+        "/api", "/api/health", "/api/market/quotes", "/api/portfolio",
+        "/api/trading/place-order", "/api/strategy/execute"
+    ]}), 404
 
 @app.errorhandler(500)
 def internal_error(error):
-    return jsonify({
-        "success": False,
-        "error": "Internal server error",
-        "message": "Please try again later"
-    }), 500
+    return jsonify({"success": False, "error": "Internal server error", "message": "Please try later"}), 500
 
-# For local development
+# Local dev
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
 
-# For Vercel
+# Vercel serverless entrypoint
+# Vercel will call `handler(event, context)` which is a valid WSGI adapter
 def handler(event, context):
     return app(event, context)
-
